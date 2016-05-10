@@ -20,6 +20,8 @@ namespace Elcodi\Component\EntityTranslator\Form\Type;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormConfigInterface;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 
 use Elcodi\Component\EntityTranslator\Services\Interfaces\EntityTranslationProviderInterface;
 
@@ -166,12 +168,7 @@ class TranslatableFieldType extends AbstractType
                 : '';
 
             $builder->add($translatedFieldName, $fieldType, [
-                'required' => isset($fieldOptions['required'])
-                    ? $this->evaluateRequired(
-                        $fieldOptions['required'],
-                        $locale
-                    )
-                    : false,
+                'required' => isset($fieldOptions['required']) ? $fieldOptions['required'] : false,
                 'mapped' => false,
                 'label' => $fieldOptions['label'],
                 'data' => $translationData,
@@ -183,16 +180,13 @@ class TranslatableFieldType extends AbstractType
     /**
      * Check the require value.
      *
-     * @param bool   $required Form field is required
-     * @param string $locale   Locale
-     *
-     * @return bool translatable field is required
+     * @param FormView $view
+     * @param FormInterface $form
+     * @param array $options
      */
-    public function evaluateRequired($required, $locale)
+    public function buildView(FormView $view, FormInterface $form, array $options)
     {
-        return (boolean) $required
-            ? !$this->fallback || ($this->masterLocale === $locale)
-            : false;
+        $view->vars['default_locale'] = $this->masterLocale;
     }
 
     /**

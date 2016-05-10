@@ -130,7 +130,7 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
     {
         return [
             FormEvents::PRE_SUBMIT => 'preSubmit',
-            FormEvents::POST_SUBMIT => 'postSubmit',
+            FormEvents::POST_SUBMIT => ['postSubmit', 127],
             FormEvents::PRE_SET_DATA => 'preSetData',
         ];
     }
@@ -200,9 +200,6 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
     public function postSubmit(FormEvent $event)
     {
         $form = $event->getForm();
-        if (!$form->isValid()) {
-            return;
-        }
 
         $entity = $event->getData();
         $formHash = $this->getFormHash($form);
