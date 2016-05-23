@@ -140,6 +140,10 @@ class TranslatableFieldType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
+        if (isset($fieldOptions['required'])) {
+            $builder->setRequired($fieldOptions['required']);
+        }
+
         $entityAlias = $this->entityConfiguration['alias'];
         $entityIdGetter = $this->entityConfiguration['idGetter'];
 
