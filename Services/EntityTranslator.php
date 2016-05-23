@@ -169,12 +169,13 @@ class EntityTranslator implements EntityTranslatorInterface
      *
      * $entityTranslator->save($product, 'en');
      *
-     * @param object $object Object
-     * @param string $locale Locale
+     * @param object $object          Object
+     * @param string $locale          Locale
+     * @param bool   $useLocalePrefix Prefix all data by locale prefix
      *
      * @return $this Self object
      */
-    public function saveInLocale($object, $locale)
+    public function saveInLocale($object, $locale, $useLocalePrefix = false)
     {
         $classStack = $this->getNamespacesFromClass(get_class($object));
 
@@ -197,7 +198,7 @@ class EntityTranslator implements EntityTranslatorInterface
                         $configuration['alias'],
                         $entityId,
                         $fieldName,
-                        $object->$getter(),
+                        $useLocalePrefix ? $locale . '_' . $object->$getter() : $object->$getter(),
                         $locale
                     );
             }
