@@ -259,6 +259,10 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
                 $entityAlias = $entityData['alias'];
                 $fields = $entityData['fields'];
 
+                if (!$entity->$entityIdGetter()) {
+                    break;
+                }
+
                 foreach ($fields as $fieldName => $locales) {
                     foreach ($locales as $locale => $translation) {
                         $this
