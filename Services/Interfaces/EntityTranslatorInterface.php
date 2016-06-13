@@ -41,7 +41,7 @@ interface EntityTranslatorInterface
     /**
      * Saves object translations in specified locale.
      *
-     * $entityTranslator->save($product, 'en');
+     * $entityTranslator->saveInLocale($product, 'en');
      *
      * @param object $object          Object
      * @param string $locale          Locale
