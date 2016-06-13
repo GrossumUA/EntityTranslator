@@ -129,8 +129,8 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
-            FormEvents::PRE_SUBMIT => 'preSubmit',
-            FormEvents::POST_SUBMIT => 'postSubmit',
+            FormEvents::PRE_SUBMIT   => 'preSubmit',
+            FormEvents::POST_SUBMIT  => 'postSubmit',
             FormEvents::PRE_SET_DATA => 'preSetData',
         ];
     }
@@ -158,25 +158,31 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
                 continue;
             }
 
-            $formConfig = $form
-                ->get($fieldName)
-                ->getConfig();
+            $formElement = $form->get($fieldName);
+            $formConfig = $formElement->getConfig();
+
+            if ($formConfig->getType()->getName() === TranslatableFieldType::NAME) {
+                $originalFormType = $formConfig->getOption('originalFormType');
+            } else {
+                $originalFormType = $formConfig->getType()->getName();
+            }
 
             $form
                 ->remove($fieldName)
-                ->add($fieldName, new TranslatableFieldType(
-                    $this->entityTranslationProvider,
-                    $formConfig,
-                    $entity,
+                ->add(
                     $fieldName,
-                    $entityConfiguration,
-                    $fieldConfiguration,
-                    $this->locales,
-                    $this->masterLocale,
-                    $this->fallback
-                ), [
-                    'mapped' => false,
-                ]);
+                    TranslatableFieldType::class,
+                    [
+                        'formConfig'          => $formConfig,
+                        'fieldName'           => $fieldName,
+                        'entityConfiguration' => $entityConfiguration,
+                        'locales'             => $this->locales,
+                        'masterLocale'        => $this->masterLocale,
+                        'mapped'              => false,
+                        'data'                => $entity,
+                        'originalFormType'    => $originalFormType,
+                    ]
+                );
         }
     }
 
@@ -190,6 +196,29 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
         $form = $event->getForm();
         $formHash = $this->getFormHash($form);
         $this->submittedDataPlain[$formHash] = $event->getData();
+
+        $entity = $form->getData();
+        $entityConfiguration = $this->getTranslatableEntityConfiguration($entity);
+
+        if (is_null($entityConfiguration)) {
+            return null;
+        }
+
+        $entityFields = $entityConfiguration['fields'];
+
+        foreach ($entityFields as $fieldName => $fieldConfiguration) {
+            if (!isset($this->submittedDataPlain[$formHash][$fieldName])) {
+                continue;
+            }
+
+            $field = $this->submittedDataPlain[$formHash][$fieldName];
+
+            if ($this->masterLocale && isset($field[$this->masterLocale . '_' . $fieldName])) {
+                $masterLocaleData = $field[$this->masterLocale . '_' . $fieldName];
+                $setter = $fieldConfiguration['setter'];
+                $entity->$setter($masterLocaleData);
+            }
+        }
     }
 
     /**
@@ -200,6 +229,7 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
     public function postSubmit(FormEvent $event)
     {
         $form = $event->getForm();
+
         if (!$form->isValid()) {
             return;
         }
@@ -233,12 +263,6 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
             foreach ($this->locales as $locale) {
                 $entityData['fields'][$fieldName][$locale] = $field[$locale . '_' . $fieldName];
             }
-
-            if ($this->masterLocale && isset($field[$this->masterLocale . '_' . $fieldName])) {
-                $masterLocaleData = $field[$this->masterLocale . '_' . $fieldName];
-                $setter = $fieldConfiguration['setter'];
-                $entity->$setter($masterLocaleData);
-            }
         }
 
         $this->translationsBackup[$formHash][] = $entityData;
@@ -261,6 +285,10 @@ class EntityTranslatorFormEventListener implements EventSubscriberInterface
                 $entityIdGetter = $entityData['idGetter'];
                 $entityAlias = $entityData['alias'];
                 $fields = $entityData['fields'];
+
+                if (!$entity->$entityIdGetter()) {
+                    break;
+                }
 
                 foreach ($fields as $fieldName => $locales) {
                     foreach ($locales as $locale => $translation) {

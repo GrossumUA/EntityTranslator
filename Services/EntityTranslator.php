@@ -165,6 +165,53 @@ class EntityTranslator implements EntityTranslatorInterface
     }
 
     /**
+     * Saves object translations in specified locale.
+     *
+     * $entityTranslator->saveInLocale($product, 'en');
+     *
+     * @param object $object          Object
+     * @param string $locale          Locale
+     * @param bool   $useLocalePrefix Prefix all data by locale prefix
+     *
+     * @return $this Self object
+     */
+    public function saveInLocale($object, $locale, $useLocalePrefix = false)
+    {
+        $classStack = $this->getNamespacesFromClass(get_class($object));
+
+        foreach ($classStack as $classNamespace) {
+            if (!array_key_exists($classNamespace, $this->configuration)) {
+                continue;
+            }
+
+            $configuration = $this->configuration[$classNamespace];
+            $idGetter = $configuration['idGetter'];
+
+            $entityId = $object->$idGetter();
+
+            foreach ($configuration['fields'] as $fieldName => $fieldConfiguration) {
+                $getter = $fieldConfiguration['getter'];
+
+                $this
+                    ->entityTranslationProvider
+                    ->setTranslation(
+                        $configuration['alias'],
+                        $entityId,
+                        $fieldName,
+                        $useLocalePrefix ? $locale . '_' . $object->$getter() : $object->$getter(),
+                        $locale
+                    );
+            }
+        }
+
+        $this
+            ->entityTranslationProvider
+            ->flushTranslations();
+
+        return $this;
+    }
+
+    /**
      * Get all possible classes given an object.
      *
      * @param string $namespace Namespace

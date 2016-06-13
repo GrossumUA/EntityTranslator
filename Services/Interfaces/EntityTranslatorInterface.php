@@ -37,4 +37,15 @@ interface EntityTranslatorInterface
      * @param array  $translations Translations
      */
     public function save($object, array $translations);
+
+    /**
+     * Saves object translations in specified locale.
+     *
+     * $entityTranslator->saveInLocale($product, 'en');
+     *
+     * @param object $object          Object
+     * @param string $locale          Locale
+     * @param bool   $useLocalePrefix Prefix all data by locale prefix
+     */
+    public function saveInLocale($object, $locale, $useLocalePrefix = false);
 }
